@@ -4,10 +4,16 @@
 #include <ctype.h>
 #include <time.h>
 
-//Se quiserem deixar comentarios, sintam-se livres
+void formatar_colunas_ativas(int fonte_tabela, const int colunas[6], char *destino, size_t tam_max);
+void formatar_cabecalho(char *destino, size_t tamanho, const char *municipio, const char *data, int sessao, const char *tipo_sessao);
+void formatar_rodape(char *destino, size_t tamanho);
+int imprimir_formulario_txt(const char *caminho, const char *cabecalho, const char *conteudo, const char *rodape);
+int editar_formulario_txt(const char *caminho);
 
-//========= STRUCTS NESCESSARIOS ================
-typedef struct Vereador {
+/* structs*/
+
+typedef struct Vereador
+{
     int id_vereador;
     char nome[60];
     char partido[15];
@@ -15,7 +21,8 @@ typedef struct Vereador {
     struct Vereador *prox;
 } Vereador;
 
-typedef struct Reuniao {
+typedef struct Reuniao
+{
     int id_reuniao;
     char data_reuniao[11];
     char hora[6];
@@ -23,7 +30,8 @@ typedef struct Reuniao {
     struct Reuniao *prox;
 } Reuniao;
 
-typedef struct Projeto {
+typedef struct Projeto
+{
     int id_proj;
     int id_autor;
     char titulo[100];
@@ -33,7 +41,8 @@ typedef struct Projeto {
     struct Projeto *prox;
 } Projeto;
 
-typedef struct Presenca {
+typedef struct Presenca
+{
     int id_presenca;
     int id_reuniao;
     int id_vereador;
@@ -41,7 +50,8 @@ typedef struct Presenca {
     struct Presenca *prox;
 } Presenca;
 
-typedef struct Votacao {
+typedef struct Votacao
+{
     int id_votacao;
     int id_projeto;
     int id_reuniao;
@@ -50,406 +60,488 @@ typedef struct Votacao {
     struct Votacao *prox;
 } Votacao;
 
-typedef struct BlocoDocumento {
+typedef struct BlocoDocumento
+{
     int id;
-    int tipo;                  
-    char conteudo_texto[1024]; 
-    int fonte_tabela;         
+    int tipo;
+    char conteudo_texto[1024];
+    int fonte_tabela;
     int colunas[6];
     struct BlocoDocumento *prox;
 } BlocoDocumento;
 
+/* listas */
 
-
-
-// =================== LISTAS MUAHAHAHAHA ===================
 const char *NOMES_BASE[] = {
     "Arthur", "Oliveira", "Patriota",
-    "Lemos", "Conceicao", "Emidio", 
-    "Araujo", "Andrey", "Assis", 
+    "Lemos", "Conceicao", "Emidio",
+    "Araujo", "Andrey", "Assis",
     "Correia", "Cayo", "Lins",
     "Mathaus", "Mickael", "D'Silva",
-    "Chaves", "Santiago", "Ferreira", 
+    "Chaves", "Santiago", "Ferreira",
     "Santos", "Silver", "Prata",
-    "Contes", "Mike", "Azevedo", 
+    "Contes", "Mike", "Azevedo",
     "Junior", "Descassa", "Sentiu",
-    "Lenicia","Joao", "Mario", 
-    "Carlos", "Silva", "Santos", 
-    "Souza", "Pereira", "Lima", 
+    "Lenicia", "Joao", "Mario",
+    "Carlos", "Silva", "Santos",
+    "Souza", "Pereira", "Lima",
     "Ana", "Beatriz", "Lucas",
     "Leticia", "Mandraque", "Jonas",
-    "INSIRA_NOME_BRABO"
-};
+    "INSIRA_NOME_BRABO"};
 const int TOTAL_NOMES = sizeof(NOMES_BASE) / sizeof(NOMES_BASE[0]);
 
 const char *PARTIDOS[] = {
-    "PIC", "PICHICA", "PIQB", 
-    "PIF", "TPM", "PF", 
-    "PSCRR", "NOVO", "ANTIGO", 
+    "PIC", "PICHICA", "PIQB",
+    "PIF", "TPM", "PF",
+    "PSCRR", "NOVO", "ANTIGO",
     "PSC", "PNET", "PP",
-    "FON"
-};
+    "FON"};
 const int TOTAL_PARTIDOS = sizeof(PARTIDOS) / sizeof(PARTIDOS[0]);
 
 const char *DOMINIOS[] = {
-    "camara.leg.br", 
-    "gmail.com", 
-    "outlook.com", 
-    "ic.ufal.br", 
-    "lves.com.br", 
+    "camara.leg.br",
+    "gmail.com",
+    "outlook.com",
+    "ic.ufal.br",
+    "lves.com.br",
     "camara.gov.br",
     "fbi.gov.us",
     "hacker.tor.br",
-    "empty.none.go"
-};
+    "empty.none.go"};
 const int TOTAL_DOMINIOS = sizeof(DOMINIOS) / sizeof(DOMINIOS[0]);
 
 const char *ACOES_BASE[] = {
-    "Institucionalizacao", "Regulamentacao", 
-    "Memificacao", "Fomento", 
-    "Proibicao", "Padronizacao", 
-    "Valorizacao", "Nacionalizacao", 
+    "Institucionalizacao", "Regulamentacao",
+    "Memificacao", "Fomento",
+    "Proibicao", "Padronizacao",
+    "Valorizacao", "Nacionalizacao",
     "Precarizacao", "Clusteriacao",
     "Oficializacao", "Consideracao",
     "Perdao", "Informe",
-    "Ementa", "Documentalizacao"
-};
+    "Ementa", "Documentalizacao"};
 const int TOTAL_ACOES = sizeof(ACOES_BASE) / sizeof(ACOES_BASE[0]);
 
 const char *TEMAS_BASE[] = {
-    "Saude", "Violencia", "Representacao", 
-    "Patriotismo", "Panificacao", "Cambio", 
-    "Educacao", "Cultura", "Criptomoedas", 
+    "Saude", "Violencia", "Representacao",
+    "Patriotismo", "Panificacao", "Cambio",
+    "Educacao", "Cultura", "Criptomoedas",
     "Gastronomia", "Seguranca", "CyberSeguranca",
-    "Residuos", "Polica"
-};
+    "Residuos", "Polica"};
 const int TOTAL_TEMAS = sizeof(TEMAS_BASE) / sizeof(TEMAS_BASE[0]);
 
 const char *CATEGORIAS[] = {
-    "Saude", "Educacao", "Infraestrutura", 
+    "Saude", "Educacao", "Infraestrutura",
     "Meio Ambiente", "Seguranca", "Financas",
     "Migueh", "Inutil", "Trapaceio", "Manobra Legal",
-    "Greve"
-};
+    "Greve"};
 
 const int TOTAL_CATEGORIAS = sizeof(CATEGORIAS) / sizeof(CATEGORIAS[0]);
 
 const char *STATUS_PROJ[] = {
-    "Em Tramitacao", 
-    "Aprovado", 
-    "Rejeitado", 
-    "Arquivado"
-};
+    "Em Tramitacao",
+    "Aprovado",
+    "Rejeitado",
+    "Arquivado"};
 const int TOTAL_STATUS_PROJ = sizeof(STATUS_PROJ) / sizeof(STATUS_PROJ[0]);
 
 const char *STATUS_PRESENCA[] = {
-    "presente", 
-    "ausente", 
-    "justificado"
-};
+    "presente",
+    "ausente",
+    "justificado"};
 const int TOTAL_PRESENCA = sizeof(STATUS_PRESENCA) / sizeof(STATUS_PRESENCA[0]);
 
 const char *VOTOS[] = {
-    "Favoravel", 
-    "Contrario", 
-    "Abstencao"
-};
+    "Favoravel",
+    "Contrario",
+    "Abstencao"};
 const int TOTAL_VOTOS = sizeof(VOTOS) / sizeof(VOTOS[0]);
 
 // ============================================================================
 //   FUNÇÕES BASICAS
 // ============================================================================
 
-void    limpar_tela() {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+void limpar_tela()
+{
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
 }
 
-void    pausar_tela() {
+void pausar_tela()
+{
     printf("\nPressione ENTER para continuar...");
     getchar();
 }
 
-void    copiar_string(char *pra_ca, const char *daqui, size_t tamanho_max) {
-    if (!pra_ca || !daqui || tamanho_max == 0) return;
+void copiar_string(char *pra_ca, const char *daqui, size_t tamanho_max)
+{
+    if (!pra_ca || !daqui || tamanho_max == 0)
+        return;
     strncpy(pra_ca, daqui, tamanho_max - 1);
     pra_ca[tamanho_max - 1] = '\0';
 }
 
-void    escrever(const char *caminho, const char *texto) {
-    if (!caminho || !texto) return;
+void escrever(const char *caminho, const char *texto)
+{
+    if (!caminho || !texto)
+        return;
     FILE *f = fopen(caminho, "a");
-    if (!f) return;
+    if (!f)
+        return;
     fputs(texto, f);
     fclose(f);
 }
 
-int     obter_maior_id(const char *caminho) {
+int obter_maior_id(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return 1000;
+    if (!f)
+        return 1000;
 
     int maior = 0;
     char linha[256];
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         int id = atoi(linha);
-        if (id > maior) maior = id;
+        if (id > maior)
+            maior = id;
     }
     fclose(f);
     return (maior > 0) ? maior : 1000;
 }
 
-int     carregar_todos_ids(const char *caminho, int ids[], int max_ids) {
+int carregar_todos_ids(const char *caminho, int ids[], int max_ids)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return 0;
+    if (!f)
+        return 0;
 
     int qtd = 0;
     char linha[256];
-    while (fgets(linha, sizeof(linha), f) && qtd < max_ids) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f) && qtd < max_ids)
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         int id = atoi(linha);
-        if (id > 0) ids[qtd++] = id;
+        if (id > 0)
+            ids[qtd++] = id;
     }
     fclose(f);
     return qtd;
 }
 
-void    sortear_tema_complexo(char *destino, size_t tam_max, const char *prefixo) {
+void sortear_tema_complexo(char *destino, size_t tam_max, const char *prefixo)
+{
     int acao = rand() % TOTAL_ACOES;
     int tema1 = rand() % TOTAL_TEMAS;
     int tema2 = rand() % TOTAL_TEMAS;
 
-    if (prefixo && strlen(prefixo) > 0) {
+    if (prefixo && strlen(prefixo) > 0)
+    {
         snprintf(destino, tam_max, "%s %s de %s de %s", prefixo, ACOES_BASE[acao], TEMAS_BASE[tema1], TEMAS_BASE[tema2]);
-    } else {
+    }
+    else
+    {
         snprintf(destino, tam_max, "%s de %s de %s", ACOES_BASE[acao], TEMAS_BASE[tema1], TEMAS_BASE[tema2]);
     }
 }
 
-// ============================================================================
-//   CARREGAMENTO DE DADOS (ARQUIVO -> LISTAS) (CUIDADO COMA RAM)
-// ============================================================================
+/* carregamento de dados*/
 
-Vereador*   carregar_vereadores(const char *caminho) {
+Vereador *carregar_vereadores(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     char linha[256];
     Vereador *head = NULL, *tail = NULL;
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         linha[strcspn(linha, "\r\n")] = '\0';
 
-        Vereador *novo = (Vereador*) malloc(sizeof(Vereador));
-        if (!novo) continue;
+        Vereador *novo = (Vereador *)malloc(sizeof(Vereador));
+        if (!novo)
+            continue;
         novo->prox = NULL;
 
         char *token = strtok(linha, ";");
-        if (token) novo->id_vereador = atoi(token);
+        if (token)
+            novo->id_vereador = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->nome, token, sizeof(novo->nome));
+        if (token)
+            copiar_string(novo->nome, token, sizeof(novo->nome));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->partido, token, sizeof(novo->partido));
+        if (token)
+            copiar_string(novo->partido, token, sizeof(novo->partido));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->email, token, sizeof(novo->email));
+        if (token)
+            copiar_string(novo->email, token, sizeof(novo->email));
 
-        if (!head) head = novo;
-        else tail->prox = novo;
+        if (!head)
+            head = novo;
+        else
+            tail->prox = novo;
         tail = novo;
     }
     fclose(f);
     return head;
 }
 
-Reuniao*    carregar_reunioes(const char *caminho) {
+Reuniao *carregar_reunioes(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     char linha[256];
     Reuniao *head = NULL, *tail = NULL;
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         linha[strcspn(linha, "\r\n")] = '\0';
 
-        Reuniao *novo = (Reuniao*) malloc(sizeof(Reuniao));
-        if (!novo) continue;
+        Reuniao *novo = (Reuniao *)malloc(sizeof(Reuniao));
+        if (!novo)
+            continue;
         novo->prox = NULL;
 
         char *token = strtok(linha, ";");
-        if (token) novo->id_reuniao = atoi(token);
+        if (token)
+            novo->id_reuniao = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->data_reuniao, token, sizeof(novo->data_reuniao));
+        if (token)
+            copiar_string(novo->data_reuniao, token, sizeof(novo->data_reuniao));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->hora, token, sizeof(novo->hora));
+        if (token)
+            copiar_string(novo->hora, token, sizeof(novo->hora));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->pauta, token, sizeof(novo->pauta));
+        if (token)
+            copiar_string(novo->pauta, token, sizeof(novo->pauta));
 
-        if (!head) head = novo;
-        else tail->prox = novo;
+        if (!head)
+            head = novo;
+        else
+            tail->prox = novo;
         tail = novo;
     }
     fclose(f);
     return head;
 }
 
-Projeto*    carregar_projetos(const char *caminho) {
+Projeto *carregar_projetos(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     char linha[256];
     Projeto *head = NULL, *tail = NULL;
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         linha[strcspn(linha, "\r\n")] = '\0';
 
-        Projeto *novo = (Projeto*) malloc(sizeof(Projeto));
-        if (!novo) continue;
+        Projeto *novo = (Projeto *)malloc(sizeof(Projeto));
+        if (!novo)
+            continue;
         novo->prox = NULL;
 
         char *token = strtok(linha, ";");
-        if (token) novo->id_proj = atoi(token);
+        if (token)
+            novo->id_proj = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->titulo, token, sizeof(novo->titulo));
+        if (token)
+            copiar_string(novo->titulo, token, sizeof(novo->titulo));
         token = strtok(NULL, ";");
-        if (token) novo->id_autor = atoi(token);
+        if (token)
+            novo->id_autor = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->data_mostra, token, sizeof(novo->data_mostra));
+        if (token)
+            copiar_string(novo->data_mostra, token, sizeof(novo->data_mostra));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->categoria, token, sizeof(novo->categoria));
+        if (token)
+            copiar_string(novo->categoria, token, sizeof(novo->categoria));
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->status, token, sizeof(novo->status));
+        if (token)
+            copiar_string(novo->status, token, sizeof(novo->status));
 
-        if (!head) head = novo;
-        else tail->prox = novo;
+        if (!head)
+            head = novo;
+        else
+            tail->prox = novo;
         tail = novo;
     }
     fclose(f);
     return head;
 }
 
-Presenca*   carregar_presencas(const char *caminho) {
+Presenca *carregar_presencas(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     char linha[256];
     Presenca *head = NULL, *tail = NULL;
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         linha[strcspn(linha, "\r\n")] = '\0';
 
-        Presenca *novo = (Presenca*) malloc(sizeof(Presenca));
-        if (!novo) continue;
+        Presenca *novo = (Presenca *)malloc(sizeof(Presenca));
+        if (!novo)
+            continue;
         novo->prox = NULL;
 
         char *token = strtok(linha, ";");
-        if (token) novo->id_presenca = atoi(token);
+        if (token)
+            novo->id_presenca = atoi(token);
         token = strtok(NULL, ";");
-        if (token) novo->id_reuniao = atoi(token);
+        if (token)
+            novo->id_reuniao = atoi(token);
         token = strtok(NULL, ";");
-        if (token) novo->id_vereador = atoi(token);
+        if (token)
+            novo->id_vereador = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->status_presenca, token, sizeof(novo->status_presenca));
+        if (token)
+            copiar_string(novo->status_presenca, token, sizeof(novo->status_presenca));
 
-        if (!head) head = novo;
-        else tail->prox = novo;
+        if (!head)
+            head = novo;
+        else
+            tail->prox = novo;
         tail = novo;
     }
     fclose(f);
     return head;
 }
 
-Votacao*    carregar_votacoes(const char *caminho) {
+Votacao *carregar_votacoes(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     char linha[256];
     Votacao *head = NULL, *tail = NULL;
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+            continue;
         linha[strcspn(linha, "\r\n")] = '\0';
 
-        Votacao *novo = (Votacao*) malloc(sizeof(Votacao));
-        if (!novo) continue;
+        Votacao *novo = (Votacao *)malloc(sizeof(Votacao));
+        if (!novo)
+            continue;
         novo->prox = NULL;
 
         char *token = strtok(linha, ";");
-        if (token) novo->id_votacao = atoi(token);
+        if (token)
+            novo->id_votacao = atoi(token);
         token = strtok(NULL, ";");
-        if (token) novo->id_projeto = atoi(token);
+        if (token)
+            novo->id_projeto = atoi(token);
         token = strtok(NULL, ";");
-        if (token) novo->id_reuniao = atoi(token);
+        if (token)
+            novo->id_reuniao = atoi(token);
         token = strtok(NULL, ";");
-        if (token) novo->id_vereador = atoi(token);
+        if (token)
+            novo->id_vereador = atoi(token);
         token = strtok(NULL, ";");
-        if (token) copiar_string(novo->voto, token, sizeof(novo->voto));
+        if (token)
+            copiar_string(novo->voto, token, sizeof(novo->voto));
 
-        if (!head) head = novo;
-        else tail->prox = novo;
+        if (!head)
+            head = novo;
+        else
+            tail->prox = novo;
         tail = novo;
     }
     fclose(f);
     return head;
 }
 
+/* liberação de memória*/
 
-// =================== LIBERAÇÃO DE MEMÓRIA ===================
-void liberar_vereadores(Vereador *head) { 
-    while (head) { 
-        Vereador *t = head; head = head->prox; free(t); 
-    } 
-}
-void liberar_reunioes(Reuniao *head) { 
-    while (head) { 
-        Reuniao *t = head; 
-        head = head->prox; 
-        free(t); 
-    } 
-}
-void liberar_projetos(Projeto *head) { 
-    while (head) { 
-        Projeto *t = head; 
-        head = head->prox; 
-        free(t); 
+void liberar_vereadores(Vereador *head)
+{
+    while (head)
+    {
+        Vereador *t = head;
+        head = head->prox;
+        free(t);
     }
 }
-void liberar_presencas(Presenca *head) { 
-    while (head) { 
-        Presenca *t = head; 
-        head = head->prox; 
-        free(t); 
-    } 
+void liberar_reunioes(Reuniao *head)
+{
+    while (head)
+    {
+        Reuniao *t = head;
+        head = head->prox;
+        free(t);
+    }
 }
-void liberar_votacoes(Votacao *head) { 
-    while (head) { 
-        Votacao *t = head; 
-        head = head->prox; 
-        free(t); 
-    } 
+void liberar_projetos(Projeto *head)
+{
+    while (head)
+    {
+        Projeto *t = head;
+        head = head->prox;
+        free(t);
+    }
 }
-void liberar_blocos(BlocoDocumento *head) { 
-    while (head) { 
-        BlocoDocumento *t = head; 
-        head = head->prox; 
-        free(t); 
-    } 
+void liberar_presencas(Presenca *head)
+{
+    while (head)
+    {
+        Presenca *t = head;
+        head = head->prox;
+        free(t);
+    }
+}
+void liberar_votacoes(Votacao *head)
+{
+    while (head)
+    {
+        Votacao *t = head;
+        head = head->prox;
+        free(t);
+    }
+}
+void liberar_blocos(BlocoDocumento *head)
+{
+    while (head)
+    {
+        BlocoDocumento *t = head;
+        head = head->prox;
+        free(t);
+    }
 }
 
-// ============================================================================
-//   GERADORES (Vão gerar dados que façam sentido)
-// ============================================================================
+/* geradores */
 
-int     estava_presente_memoria(Presenca *head_presenca, int id_reuniao, int id_vereador) {
+int estava_presente_memoria(Presenca *head_presenca, int id_reuniao, int id_vereador)
+{
     Presenca *atual = head_presenca;
-    while (atual) {
-        if (atual->id_reuniao == id_reuniao && atual->id_vereador == id_vereador) {
+    while (atual)
+    {
+        if (atual->id_reuniao == id_reuniao && atual->id_vereador == id_vereador)
+        {
             return (strcmp(atual->status_presenca, "presente") == 0);
         }
         atual = atual->prox;
@@ -457,7 +549,8 @@ int     estava_presente_memoria(Presenca *head_presenca, int id_reuniao, int id_
     return 0;
 }
 
-void    gerar_votacoes_completas_otimizada(Presenca *lista_presencas) {
+void gerar_votacoes_completas_otimizada(Presenca *lista_presencas)
+{
     int v_ids[100], r_ids[100], p_ids[100];
     int total_v = carregar_todos_ids("OsCapaPreta.txt", v_ids, 100);
     int total_r = carregar_todos_ids("reunioes.txt", r_ids, 100);
@@ -470,8 +563,10 @@ void    gerar_votacoes_completas_otimizada(Presenca *lista_presencas) {
     int presentes[101][101] = {0};
     Presenca *aux = lista_presencas;
 
-    while (aux) {
-        if (strcmp(aux->status_presenca, "presente") == 0) {
+    while (aux)
+    {
+        if (strcmp(aux->status_presenca, "presente") == 0)
+        {
             if (aux->id_reuniao < 101 && aux->id_vereador < 101)
                 presentes[aux->id_reuniao][aux->id_vereador] = 1;
         }
@@ -483,14 +578,17 @@ void    gerar_votacoes_completas_otimizada(Presenca *lista_presencas) {
         return;
 
     int id_atual = obter_maior_id("votacao.txt") + 1;
-    for (int r = 0; r < total_r; r++) {
+    for (int r = 0; r < total_r; r++)
+    {
         int id_projeto = p_ids[r % total_p];
-        for (int v = 0; v < total_v; v++) {
+        for (int v = 0; v < total_v; v++)
+        {
             int id_reuniao = r_ids[r];
             int id_vereador = v_ids[v];
             if (id_reuniao < 101 &&
                 id_vereador < 101 &&
-                presentes[id_reuniao][id_vereador]) {
+                presentes[id_reuniao][id_vereador])
+            {
                 fprintf(f, "%05d;%03d;%d;%d;%s\n",
                         id_atual++,
                         id_projeto,
@@ -503,42 +601,60 @@ void    gerar_votacoes_completas_otimizada(Presenca *lista_presencas) {
     fclose(f);
 }
 
-// ============================================================================
-//   SISTEMA DE BLOCOS DO DOCUMENTO
-// ============================================================================
+/* blocos do documento*/
 
-int             obter_proximo_id_bloco(BlocoDocumento *head) {
+int obter_proximo_id_bloco(BlocoDocumento *head)
+{
     int max_id = 0;
-    while (head) {
-        if (head->id > max_id) max_id = head->id;
+    while (head)
+    {
+        if (head->id > max_id)
+            max_id = head->id;
         head = head->prox;
     }
     return max_id + 1;
 }
 
-const char*     obter_nome_fonte(int fonte) {
-    switch (fonte) {
-        case 1: return "OsCapaPreta.txt";
-        case 2: return "reunioes.txt";
-        case 3: return "votacao.txt";
-        case 4: return "projetos.txt";
-        case 5: return "presenca.txt";
-        default: return "OsCapaPreta.txt";
+const char *obter_nome_fonte(int fonte)
+{
+    switch (fonte)
+    {
+    case 1:
+        return "OsCapaPreta.txt";
+    case 2:
+        return "reunioes.txt";
+    case 3:
+        return "votacao.txt";
+    case 4:
+        return "projetos.txt";
+    case 5:
+        return "presenca.txt";
+    default:
+        return "OsCapaPreta.txt";
     }
 }
 
-const char*     obter_titulo_fonte(int fonte) {
-    switch (fonte) {
-        case 1: return "TABELA DE VEREADORES";
-        case 2: return "TABELA DE REUNIÕES";
-        case 3: return "TABELA DE VOTAÇÕES";
-        case 4: return "TABELA DE PROJETOS DE LEI";
-        case 5: return "TABELA DE PRESENÇAS";
-        default: return "TABELA";
+const char *obter_titulo_fonte(int fonte)
+{
+    switch (fonte)
+    {
+    case 1:
+        return "TABELA DE VEREADORES";
+    case 2:
+        return "TABELA DE REUNIÕES";
+    case 3:
+        return "TABELA DE VOTAÇÕES";
+    case 4:
+        return "TABELA DE PROJETOS DE LEI";
+    case 5:
+        return "TABELA DE PRESENÇAS";
+    default:
+        return "TABELA";
     }
 }
 
-void            renderizar_conteudo_do_relatorio(BlocoDocumento *head, char *destino, size_t tamanho_max) {
+void renderizar_conteudo_do_relatorio(BlocoDocumento *head, char *destino, size_t tamanho_max)
+{
     destino[0] = '\0';
     size_t usado = 0;
     int pagina_atual = 1;
@@ -546,36 +662,46 @@ void            renderizar_conteudo_do_relatorio(BlocoDocumento *head, char *des
     usado += snprintf(destino + usado, tamanho_max - usado, "--- PÁGINA %d ---\n\n", pagina_atual);
 
     BlocoDocumento *atual = head;
-    while (atual) {
-        if (atual->tipo == 1) {
+    while (atual)
+    {
+        if (atual->tipo == 1)
+        {
             usado += snprintf(destino + usado, tamanho_max - usado, "%s\n\n", atual->conteudo_texto);
         }
-        else if (atual->tipo == 2) {
+        else if (atual->tipo == 2)
+        {
             usado += snprintf(destino + usado, tamanho_max - usado, "--- %s ---\n", obter_titulo_fonte(atual->fonte_tabela));
-            
+
             const char *arq_fonte = obter_nome_fonte(atual->fonte_tabela);
             FILE *f_in = fopen(arq_fonte, "r");
-            if (f_in) {
+            if (f_in)
+            {
                 char linha[256];
-                while (fgets(linha, sizeof(linha), f_in)) {
-                    if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r') continue;
+                while (fgets(linha, sizeof(linha), f_in))
+                {
+                    if (linha[0] == '#' || linha[0] == '\n' || linha[0] == '\r')
+                        continue;
 
                     linha[strcspn(linha, "\r\n")] = '\0';
 
                     char *cols[6] = {NULL};
                     cols[0] = strtok(linha, ";");
-                    for (int i = 1; i < 6; i++) cols[i] = strtok(NULL, ";");
+                    for (int i = 1; i < 6; i++)
+                        cols[i] = strtok(NULL, ";");
 
                     int pos = 0;
                     char linha_montada[512] = "";
 
-                    for (int i = 0; i < 6; i++) {
-                        if (atual->colunas[i] && cols[i]) {
+                    for (int i = 0; i < 6; i++)
+                    {
+                        if (atual->colunas[i] && cols[i])
+                        {
                             pos += snprintf(linha_montada + pos, sizeof(linha_montada) - pos,
                                             "%s%s", (pos == 0 ? "" : " | "), cols[i]);
                         }
                     }
-                    if (pos > 0) {
+                    if (pos > 0)
+                    {
                         usado += snprintf(destino + usado, tamanho_max - usado, "%s\n", linha_montada);
                     }
                 }
@@ -583,31 +709,39 @@ void            renderizar_conteudo_do_relatorio(BlocoDocumento *head, char *des
             }
             usado += snprintf(destino + usado, tamanho_max - usado, "\n");
         }
-        else if (atual->tipo == 3) {
+        else if (atual->tipo == 3)
+        {
             pagina_atual++;
             usado += snprintf(destino + usado, tamanho_max - usado, "\n--- PÁGINA %d ---\n\n", pagina_atual);
         }
-        if (usado >= tamanho_max - 1) break;
+        if (usado >= tamanho_max - 1)
+            break;
         atual = atual->prox;
     }
 }
 
-BlocoDocumento* carregar_relatorio(const char *caminho) {
+BlocoDocumento *carregar_relatorio(const char *caminho)
+{
     FILE *f = fopen(caminho, "r");
-    if (!f) return NULL;
+    if (!f)
+        return NULL;
 
     BlocoDocumento *head = NULL, *tail = NULL;
     char linha[512];
 
-    while (fgets(linha, sizeof(linha), f)) {
-        if (strncmp(linha, "# BLOCO_INICIO", 14) == 0) {
-            BlocoDocumento *novo = (BlocoDocumento*) malloc(sizeof(BlocoDocumento));
-            if (!novo) continue;
+    while (fgets(linha, sizeof(linha), f))
+    {
+        if (strncmp(linha, "# BLOCO_INICIO", 14) == 0)
+        {
+            BlocoDocumento *novo = (BlocoDocumento *)malloc(sizeof(BlocoDocumento));
+            if (!novo)
+                continue;
             memset(novo, 0, sizeof(BlocoDocumento));
 
             sscanf(linha, "# BLOCO_INICIO|ID:%d|TIPO:%d", &novo->id, &novo->tipo);
 
-            if (novo->tipo == 2) {
+            if (novo->tipo == 2)
+            {
                 sscanf(linha, "# BLOCO_INICIO|ID:%*d|TIPO:%*d|FONTE:%d|COLS:%d,%d,%d,%d,%d,%d",
                        &novo->fonte_tabela,
                        &novo->colunas[0], &novo->colunas[1], &novo->colunas[2],
@@ -615,20 +749,26 @@ BlocoDocumento* carregar_relatorio(const char *caminho) {
             }
 
             char sub_linha[512];
-            while (fgets(sub_linha, sizeof(sub_linha), f)) {
-                if (strncmp(sub_linha, "# BLOCO_FIM", 11) == 0) break;
-                if (novo->tipo == 1) {
+            while (fgets(sub_linha, sizeof(sub_linha), f))
+            {
+                if (strncmp(sub_linha, "# BLOCO_FIM", 11) == 0)
+                    break;
+                if (novo->tipo == 1)
+                {
                     strcat(novo->conteudo_texto, sub_linha);
                 }
             }
 
             size_t len = strlen(novo->conteudo_texto);
-            if (len > 0 && novo->conteudo_texto[len - 1] == '\n') {
+            if (len > 0 && novo->conteudo_texto[len - 1] == '\n')
+            {
                 novo->conteudo_texto[len - 1] = '\0';
             }
 
-            if (!head) head = novo;
-            else tail->prox = novo;
+            if (!head)
+                head = novo;
+            else
+                tail->prox = novo;
             tail = novo;
         }
     }
@@ -636,32 +776,40 @@ BlocoDocumento* carregar_relatorio(const char *caminho) {
     return head;
 }
 
-void            exibir_blocos_menu(BlocoDocumento *head) {
+void exibir_blocos_menu(BlocoDocumento *head)
+{
     printf("\n====================================================\n");
     printf("         ESTRUTURA ATUAL DO DOCUMENTO               \n");
     printf("====================================================\n");
 
-    if (!head) {
+    if (!head)
+    {
         printf(" [Nenhum bloco cadastrado]\n");
         return;
     }
 
     BlocoDocumento *atual = head;
     int pos = 1;
-    while (atual) {
-        if (atual->tipo == 1) {
+    while (atual)
+    {
+        if (atual->tipo == 1)
+        {
             char preview[40] = "";
             strncpy(preview, atual->conteudo_texto, 35);
             preview[35] = '\0';
             printf(" %d. [TEXTO (ID %d)] \"%s...\"\n", pos, atual->id, preview);
-        } else if (atual->tipo == 2) {
+        }
+        else if (atual->tipo == 2)
+        {
             // Formata os nomes das colunas selecionadas
             char str_colunas[256];
             formatar_colunas_ativas(atual->fonte_tabela, atual->colunas, str_colunas, sizeof(str_colunas));
 
             printf(" %d. [TABELA (ID %d)] Fonte: %s | Colunas: [%s]\n",
                    pos, atual->id, obter_titulo_fonte(atual->fonte_tabela), str_colunas);
-        } else if (atual->tipo == 3) {
+        }
+        else if (atual->tipo == 3)
+        {
             printf(" %d. [QUEBRA DE PÁGINA (ID %d)]\n", pos, atual->id);
         }
         atual = atual->prox;
@@ -669,32 +817,40 @@ void            exibir_blocos_menu(BlocoDocumento *head) {
     }
 }
 
-void            adicionar_novo_bloco_texto(BlocoDocumento **head) {
-    BlocoDocumento *novo = (BlocoDocumento*) malloc(sizeof(BlocoDocumento));
-    if (!novo) return;
+void adicionar_novo_bloco_texto(BlocoDocumento **head)
+{
+    BlocoDocumento *novo = (BlocoDocumento *)malloc(sizeof(BlocoDocumento));
+    if (!novo)
+        return;
     memset(novo, 0, sizeof(BlocoDocumento));
 
     novo->id = obter_proximo_id_bloco(*head);
     novo->tipo = 1;
 
     printf("\nDigite o texto livre a ser inserido no bloco: ");
-    if (fgets(novo->conteudo_texto, sizeof(novo->conteudo_texto), stdin)) {
+    if (fgets(novo->conteudo_texto, sizeof(novo->conteudo_texto), stdin))
+    {
         novo->conteudo_texto[strcspn(novo->conteudo_texto, "\r\n")] = '\0';
     }
 
-    if (!*head) *head = novo;
-    else {
+    if (!*head)
+        *head = novo;
+    else
+    {
         BlocoDocumento *t = *head;
-        while (t->prox) t = t->prox;
+        while (t->prox)
+            t = t->prox;
         t->prox = novo;
     }
     printf("[OK] Bloco de Texto (ID %d) adicionado!\n", novo->id);
 }
 
-void            adicionar_novo_bloco_tabela(BlocoDocumento **head) {
-    BlocoDocumento *novo = (BlocoDocumento*) malloc(sizeof(BlocoDocumento));
+void adicionar_novo_bloco_tabela(BlocoDocumento **head)
+{
+    BlocoDocumento *novo = (BlocoDocumento *)malloc(sizeof(BlocoDocumento));
 
-    if (!novo) return;
+    if (!novo)
+        return;
     memset(novo, 0, sizeof(BlocoDocumento));
 
     novo->id = obter_proximo_id_bloco(*head);
@@ -709,88 +865,138 @@ void            adicionar_novo_bloco_tabela(BlocoDocumento **head) {
     printf("Escolha a fonte: ");
 
     int opcao = 1;
-    if (scanf("%d", &opcao) != 1) opcao = 1;
+    if (scanf("%d", &opcao) != 1)
+        opcao = 1;
     getchar();
 
     novo->fonte_tabela = opcao;
 
     // Garante que todas as posições começam em 0
-    for (int i = 0; i < 6; i++) novo->colunas[i] = 0;
+    for (int i = 0; i < 6; i++)
+        novo->colunas[i] = 0;
 
     printf("\n--- Escolha as colunas a incluir (1-Sim / 0-Não) ---\n");
 
-    if (opcao == 1) {
-        printf("ID_VEREADOR? "); scanf("%d", &novo->colunas[0]);
-        printf("NOME? ");        scanf("%d", &novo->colunas[1]);
-        printf("PARTIDO? ");     scanf("%d", &novo->colunas[2]);
-        printf("EMAIL? ");       scanf("%d", &novo->colunas[3]);
-    } else if (opcao == 2) {
-        printf("ID_REUNIAO? ");   scanf("%d", &novo->colunas[0]);
-        printf("DATA_REUNIAO? "); scanf("%d", &novo->colunas[1]);
-        printf("HORA? ");         scanf("%d", &novo->colunas[2]);
-        printf("PAUTA? ");        scanf("%d", &novo->colunas[3]);
-    } else if (opcao == 3) {
-        printf("ID_VOTACAO? ");  scanf("%d", &novo->colunas[0]);
-        printf("ID_PROJETO? ");  scanf("%d", &novo->colunas[1]);
-        printf("ID_REUNIAO? ");  scanf("%d", &novo->colunas[2]);
-        printf("ID_VEREADOR? "); scanf("%d", &novo->colunas[3]);
-        printf("VOTO? ");        scanf("%d", &novo->colunas[4]);
-    } else if (opcao == 4) {
-        printf("ID_PROJ? ");     scanf("%d", &novo->colunas[0]);
-        printf("TITULO? ");      scanf("%d", &novo->colunas[1]);
-        printf("ID_AUTOR? ");    scanf("%d", &novo->colunas[2]);
-        printf("DATA_MOSTRA? "); scanf("%d", &novo->colunas[3]);
-        printf("CATEGORIA? ");   scanf("%d", &novo->colunas[4]);
-        printf("STATUS? ");      scanf("%d", &novo->colunas[5]);
-    } else {
-        printf("ID_PRESENCA? ");     scanf("%d", &novo->colunas[0]);
-        printf("ID_REUNIAO? ");      scanf("%d", &novo->colunas[1]);
-        printf("ID_VEREADOR? ");     scanf("%d", &novo->colunas[2]);
-        printf("STATUS_PRESENCA? "); scanf("%d", &novo->colunas[3]);
+    if (opcao == 1)
+    {
+        printf("ID_VEREADOR? ");
+        scanf("%d", &novo->colunas[0]);
+        printf("NOME? ");
+        scanf("%d", &novo->colunas[1]);
+        printf("PARTIDO? ");
+        scanf("%d", &novo->colunas[2]);
+        printf("EMAIL? ");
+        scanf("%d", &novo->colunas[3]);
+    }
+    else if (opcao == 2)
+    {
+        printf("ID_REUNIAO? ");
+        scanf("%d", &novo->colunas[0]);
+        printf("DATA_REUNIAO? ");
+        scanf("%d", &novo->colunas[1]);
+        printf("HORA? ");
+        scanf("%d", &novo->colunas[2]);
+        printf("PAUTA? ");
+        scanf("%d", &novo->colunas[3]);
+    }
+    else if (opcao == 3)
+    {
+        printf("ID_VOTACAO? ");
+        scanf("%d", &novo->colunas[0]);
+        printf("ID_PROJETO? ");
+        scanf("%d", &novo->colunas[1]);
+        printf("ID_REUNIAO? ");
+        scanf("%d", &novo->colunas[2]);
+        printf("ID_VEREADOR? ");
+        scanf("%d", &novo->colunas[3]);
+        printf("VOTO? ");
+        scanf("%d", &novo->colunas[4]);
+    }
+    else if (opcao == 4)
+    {
+        printf("ID_PROJ? ");
+        scanf("%d", &novo->colunas[0]);
+        printf("TITULO? ");
+        scanf("%d", &novo->colunas[1]);
+        printf("ID_AUTOR? ");
+        scanf("%d", &novo->colunas[2]);
+        printf("DATA_MOSTRA? ");
+        scanf("%d", &novo->colunas[3]);
+        printf("CATEGORIA? ");
+        scanf("%d", &novo->colunas[4]);
+        printf("STATUS? ");
+        scanf("%d", &novo->colunas[5]);
+    }
+    else
+    {
+        printf("ID_PRESENCA? ");
+        scanf("%d", &novo->colunas[0]);
+        printf("ID_REUNIAO? ");
+        scanf("%d", &novo->colunas[1]);
+        printf("ID_VEREADOR? ");
+        scanf("%d", &novo->colunas[2]);
+        printf("STATUS_PRESENCA? ");
+        scanf("%d", &novo->colunas[3]);
     }
     getchar();
 
-    if (!*head) *head = novo;
-    else {
+    if (!*head)
+        *head = novo;
+    else
+    {
         BlocoDocumento *t = *head;
-        while (t->prox) t = t->prox;
+        while (t->prox)
+            t = t->prox;
         t->prox = novo;
     }
     printf("\n[OK] Bloco de Tabela (ID %d) adicionado!\n", novo->id);
 }
 
-void            adicionar_novo_bloco_quebra(BlocoDocumento **head) {
-    BlocoDocumento *novo = (BlocoDocumento*) malloc(sizeof(BlocoDocumento));
-    if (!novo) return;
+void adicionar_novo_bloco_quebra(BlocoDocumento **head)
+{
+    BlocoDocumento *novo = (BlocoDocumento *)malloc(sizeof(BlocoDocumento));
+    if (!novo)
+        return;
     memset(novo, 0, sizeof(BlocoDocumento));
 
     novo->id = obter_proximo_id_bloco(*head);
     novo->tipo = 3;
 
-    if (!*head) *head = novo;
-    else {
+    if (!*head)
+        *head = novo;
+    else
+    {
         BlocoDocumento *t = *head;
-        while (t->prox) t = t->prox;
+        while (t->prox)
+            t = t->prox;
         t->prox = novo;
     }
     printf("[OK] Bloco de Quebra de Página (ID %d) adicionado!\n", novo->id);
 }
 
-void            salvar_estrutura_relatorio(const char *caminho_meta, BlocoDocumento *head) {
+void salvar_estrutura_relatorio(const char *caminho_meta, BlocoDocumento *head)
+{
     FILE *f = fopen(caminho_meta, "w");
-    if (!f) return;
+    if (!f)
+        return;
 
     BlocoDocumento *atual = head;
-    while (atual) {
-        if (atual->tipo == 1) { // Texto
+    while (atual)
+    {
+        if (atual->tipo == 1)
+        { // Texto
             fprintf(f, "# BLOCO_INICIO|ID:%d|TIPO:1\n%s\n# BLOCO_FIM\n\n",
                     atual->id, atual->conteudo_texto);
-        } else if (atual->tipo == 2) { // Tabela
+        }
+        else if (atual->tipo == 2)
+        { // Tabela
             fprintf(f, "# BLOCO_INICIO|ID:%d|TIPO:2|FONTE:%d|COLS:%d,%d,%d,%d,%d,%d\n# BLOCO_FIM\n\n",
                     atual->id, atual->fonte_tabela,
                     atual->colunas[0], atual->colunas[1], atual->colunas[2],
                     atual->colunas[3], atual->colunas[4], atual->colunas[5]);
-        } else if (atual->tipo == 3) { // Quebra de Página
+        }
+        else if (atual->tipo == 3)
+        { // Quebra de Página
             fprintf(f, "# BLOCO_INICIO|ID:%d|TIPO:3\n# BLOCO_FIM\n\n", atual->id);
         }
         atual = atual->prox;
@@ -798,108 +1004,166 @@ void            salvar_estrutura_relatorio(const char *caminho_meta, BlocoDocume
     fclose(f);
 }
 
-int             obter_nomes_colunas_tabela(int fonte_tabela, const char *nomes_out[]) {
-    switch (fonte_tabela) {
-        case 1: { // Vereadores
-            static const char *cols[] = {"ID_VEREADOR", "NOME", "PARTIDO", "EMAIL"};
-            for (int i = 0; i < 4; i++) nomes_out[i] = cols[i];
-            return 4;
-        }
-        case 2: { // Reuniões
-            static const char *cols[] = {"ID_REUNIAO", "DATA_REUNIAO", "HORA", "PAUTA"};
-            for (int i = 0; i < 4; i++) nomes_out[i] = cols[i];
-            return 4;
-        }
-        case 3: { // Votações
-            static const char *cols[] = {"ID_VOTACAO", "ID_PROJETO", "ID_REUNIAO", "ID_VEREADOR", "VOTO"};
-            for (int i = 0; i < 5; i++) nomes_out[i] = cols[i];
-            return 5;
-        }
-        case 4: { // Projetos de Lei
-            static const char *cols[] = {"ID_PROJ", "TITULO", "ID_AUTOR", "DATA_MOSTRA", "CATEGORIA", "STATUS"};
-            for (int i = 0; i < 6; i++) nomes_out[i] = cols[i];
-            return 6;
-        }
-        case 5: { // Presenças
-            static const char *cols[] = {"ID_PRESENCA", "ID_REUNIAO", "ID_VEREADOR", "STATUS_PRESENCA"};
-            for (int i = 0; i < 4; i++) nomes_out[i] = cols[i];
-            return 4;
-        }
-        default:
-            return 0;
+int obter_nomes_colunas_tabela(int fonte_tabela, const char *nomes_out[])
+{
+    switch (fonte_tabela)
+    {
+    case 1:
+    { // Vereadores
+        static const char *cols[] = {"ID_VEREADOR", "NOME", "PARTIDO", "EMAIL"};
+        for (int i = 0; i < 4; i++)
+            nomes_out[i] = cols[i];
+        return 4;
+    }
+    case 2:
+    { // Reuniões
+        static const char *cols[] = {"ID_REUNIAO", "DATA_REUNIAO", "HORA", "PAUTA"};
+        for (int i = 0; i < 4; i++)
+            nomes_out[i] = cols[i];
+        return 4;
+    }
+    case 3:
+    { // Votações
+        static const char *cols[] = {"ID_VOTACAO", "ID_PROJETO", "ID_REUNIAO", "ID_VEREADOR", "VOTO"};
+        for (int i = 0; i < 5; i++)
+            nomes_out[i] = cols[i];
+        return 5;
+    }
+    case 4:
+    { // Projetos de Lei
+        static const char *cols[] = {"ID_PROJ", "TITULO", "ID_AUTOR", "DATA_MOSTRA", "CATEGORIA", "STATUS"};
+        for (int i = 0; i < 6; i++)
+            nomes_out[i] = cols[i];
+        return 6;
+    }
+    case 5:
+    { // Presenças
+        static const char *cols[] = {"ID_PRESENCA", "ID_REUNIAO", "ID_VEREADOR", "STATUS_PRESENCA"};
+        for (int i = 0; i < 4; i++)
+            nomes_out[i] = cols[i];
+        return 4;
+    }
+    default:
+        return 0;
     }
 }
 
-void            formatar_colunas_ativas(int fonte_tabela, const int colunas[6], char *destino, size_t tam_max) {
+void formatar_colunas_ativas(int fonte_tabela, const int colunas[6], char *destino, size_t tam_max)
+{
     const char *nomes[6];
     int total = obter_nomes_colunas_tabela(fonte_tabela, nomes);
 
     destino[0] = '\0';
     size_t pos = 0;
 
-    for (int i = 0; i < total; i++) {
-        if (colunas[i]) {
+    for (int i = 0; i < total; i++)
+    {
+        if (colunas[i])
+        {
             pos += snprintf(destino + pos, tam_max - pos, "%s%s",
                             (pos == 0 ? "" : ", "), nomes[i]);
         }
     }
-    if (pos == 0) {
+    if (pos == 0)
+    {
         snprintf(destino, tam_max, "Nenhuma coluna");
     }
 }
 
-// ============================================================================
-//   AS 4 FUNÇÕES OBRIGATÓRIAS DA EQUIPE
-// ============================================================================
+/* cabeçalho */
 
-// LARISSA (1) — ADICIONAR CABEÇALHO (ESSE É SO UM PLACEHOLDER)
-void formatar_cabecalho(char *destino, size_t tamanho) {
+void formatar_cabecalho(
+    char *destino,
+    size_t tamanho,
+    const char *municipio,
+    const char *data,
+    int sessao,
+    const char *tipo_sessao)
+{
     snprintf(destino, tamanho,
-        "==================================================\n"
-        "         CÂMARA MUNICIPAL DE VEREADORES           \n"
-        "       RELATÓRIO DE FORMULÁRIO LEGISLATIVO        \n"
-        "==================================================\n\n"
-    );
+             "======================================================================\n"
+             " CÂMARA MUNICIPAL DE %s\n"
+             " RELATÓRIO DO FORMULÁRIO LEGISLATIVO\n"
+             " Sessão Nº: %02d (%s) | Data: %s\n"
+             "======================================================================\n\n",
+             municipio, sessao, tipo_sessao, data);
+}
+void coletar_dados_cabecalho(
+    char *municipio, size_t tam_mun,
+    char *data, size_t tam_data,
+    char *tipo_sessao, size_t tam_tipo,
+    int *sessao)
+{
+    limpar_tela();
+    printf("=== CONFIGURAÇÃO DO CABEÇALHO DO RELATÓRIO ===\n");
+
+    printf("Município da Câmara: ");
+    fgets(municipio, tam_mun, stdin);
+    municipio[strcspn(municipio, "\r\n")] = '\0';
+
+    printf("Data da Sessão (DD/MM/AAAA): ");
+    fgets(data, tam_data, stdin);
+    data[strcspn(data, "\r\n")] = '\0';
+
+    printf("Tipo da Sessão (Ordinária / Extraordinária): ");
+    fgets(tipo_sessao, tam_tipo, stdin);
+    tipo_sessao[strcspn(tipo_sessao, "\r\n")] = '\0';
+
+    printf("Número da Sessão: ");
+    if (scanf("%d", sessao) != 1)
+        *sessao = 1;
+    getchar();
 }
 
-// LUCA CALUMBY (2) — ADICIONAR RODAPÉ (ESSE É SÓ UM PLACEHOLDER)
-void formatar_rodape(char *destino, size_t tamanho) {
+/* rodape */
+
+void formatar_rodape(char *destino, size_t tamanho)
+{
     snprintf(destino, tamanho,
-        "\n==================================================\n"
-        " Documento Gerado pelo Sistema Legislativo em C   \n"
-        " Assinatura do Responsável: _______________________\n"
-        " Data de Emissão: 2026-09-26                      \n"
-        "==================================================\n"
-    );
+             "\n==================================================\n"
+             " Documento Gerado pelo Sistema Legislativo em C   \n"
+             " Assinatura do Responsável: _______________________\n"
+             " Data de Emissão: 2026-09-26                      \n"
+             "==================================================\n");
 }
 
-// VITOR CAVALCANTE (3) — ADICIONAR IMPRESSÃO EM TXT (APROVEITA A FUNÇÃO escrever()) (PLACEHOLDER)
-int imprimir_formulario_txt(const char *arquivo, const char *cabecalho, const char *conteudo, const char *rodape) {
+/* impressao do formulario */
+
+int imprimir_formulario_txt(const char *arquivo, const char *cabecalho, const char *conteudo, const char *rodape)
+{
     FILE *f = fopen(arquivo, "w"); // Limpa o arquivo para regravar do zero
-    if (!f) {
+    if (!f)
+    {
         printf("[ERRO] Não foi possível criar/abrir o arquivo '%s'.\n", arquivo);
         return 0;
     }
     fclose(f);
 
-    if (cabecalho) escrever(arquivo, cabecalho);
-    if (conteudo)  escrever(arquivo, conteudo);
-    if (rodape)    escrever(arquivo, rodape);
+    if (cabecalho)
+        escrever(arquivo, cabecalho);
+    if (conteudo)
+        escrever(arquivo, conteudo);
+    if (rodape)
+        escrever(arquivo, rodape);
 
     return 1;
 }
 
-// PATRIOTA (4) — LEITURA E ALTERAÇÃO DO TXT
-int editar_formulario_txt(const char *arquivo) {
+/* leitura e alteração*/
+
+int editar_formulario_txt(const char *arquivo)
+{
     FILE *f = fopen(arquivo, "r");
-    if (!f) {
+    if (!f)
+    {
         printf("[ERRO] Arquivo '%s' não encontrado para edição.\n", arquivo);
         return 0;
     }
 
     printf("\n--- CONTEÚDO ATUAL DO ARQUIVO '%s' ---\n\n", arquivo);
     char linha[256];
-    while (fgets(linha, sizeof(linha), f)) {
+    while (fgets(linha, sizeof(linha), f))
+    {
         printf("%s", linha);
     }
     fclose(f);
@@ -907,13 +1171,16 @@ int editar_formulario_txt(const char *arquivo) {
     printf("\n--------------------------------------------------\n");
     printf("Deseja anexar uma observação ao formulário? (1 - Sim / 0 - Não): ");
     int opcao = 0;
-    if (scanf("%d", &opcao) != 1) opcao = 0;
+    if (scanf("%d", &opcao) != 1)
+        opcao = 0;
     getchar();
 
-    if (opcao == 1) {
+    if (opcao == 1)
+    {
         char nota[256];
         printf("Digite a observação a ser anexada: ");
-        if (fgets(nota, sizeof(nota), stdin)) {
+        if (fgets(nota, sizeof(nota), stdin))
+        {
             nota[strcspn(nota, "\r\n")] = '\0';
             char nota_formatada[300];
             snprintf(nota_formatada, sizeof(nota_formatada), "\n[OBSERVAÇÃO REGISTRADA]: %s\n", nota);
@@ -925,12 +1192,10 @@ int editar_formulario_txt(const char *arquivo) {
     return 1;
 }
 
-// ============================================================================
-//   MENU DO EDITOR 
-// ============================================================================
+/* menu */
 
-//to usando um .meta pra salvar a "estrutura" do documento e facilitar edição posterior
-void editar_documento_por_blocos(const char *caminho_relatorio_txt) {
+void editar_documento_por_blocos(const char *caminho_relatorio_txt)
+{
     char caminho_meta[256];
     snprintf(caminho_meta, sizeof(caminho_meta), "relatorio_estrutura.meta");
 
@@ -938,6 +1203,11 @@ void editar_documento_por_blocos(const char *caminho_relatorio_txt) {
     char cabecalho[512] = "";
     char conteudo[16384] = "";
     char rodape[512] = "";
+    char mun[60] = "MUNICÍPIO";
+    char dt[12] = "01/01/2026";
+    char tipo_sessao[30] = "Ordinária";
+    int num_sessao = 1;
+    int cabecalho_configurado = 0;
 
     limpar_tela();
     printf("====================================================\n");
@@ -948,15 +1218,18 @@ void editar_documento_por_blocos(const char *caminho_relatorio_txt) {
     printf("Escolha uma opção: ");
 
     int opcao_inicial = 1;
-    if (scanf("%d", &opcao_inicial) != 1) opcao_inicial = 1;
+    if (scanf("%d", &opcao_inicial) != 1)
+        opcao_inicial = 1;
     getchar();
 
-    if (opcao_inicial == 2) {
+    if (opcao_inicial == 2)
+    {
         head = carregar_relatorio(caminho_meta);
     }
 
     int opcao = -1;
-    while (opcao != 0) {
+    while (opcao != 0)
+    {
         limpar_tela();
         exibir_blocos_menu(head);
 
@@ -968,73 +1241,85 @@ void editar_documento_por_blocos(const char *caminho_relatorio_txt) {
         printf("0 - Concluir Edição de Blocos\n");
         printf("Opção: ");
 
-        if (scanf("%d", &opcao) != 1) opcao = 0;
+        if (scanf("%d", &opcao) != 1)
+            opcao = 0;
         getchar();
 
-        switch (opcao) {
-            case 1:
-                limpar_tela();
-                adicionar_novo_bloco_texto(&head);
-                pausar_tela(); 
-                break;
-            case 2:
-                limpar_tela();
-                adicionar_novo_bloco_tabela(&head);
-                pausar_tela();
-                break;
-            case 3:
-                limpar_tela();
-                adicionar_novo_bloco_quebra(&head);
-                pausar_tela();
-                break;
-            case 4:
-                limpar_tela();
-                salvar_estrutura_relatorio(caminho_meta, head);
+        switch (opcao)
+        {
+        case 1:
+            limpar_tela();
+            adicionar_novo_bloco_texto(&head);
+            pausar_tela();
+            break;
+        case 2:
+            limpar_tela();
+            adicionar_novo_bloco_tabela(&head);
+            pausar_tela();
+            break;
+        case 3:
+            limpar_tela();
+            adicionar_novo_bloco_quebra(&head);
+            pausar_tela();
+            break;
+        case 4:
+            limpar_tela();
+            salvar_estrutura_relatorio(caminho_meta, head);
 
-                formatar_cabecalho(cabecalho, sizeof(cabecalho));
-                renderizar_conteudo_do_relatorio(head, conteudo, sizeof(conteudo));
-                formatar_rodape(rodape, sizeof(rodape));
+            // Pergunta as informações apenas uma vez ao gerar
+            if (!cabecalho_configurado)
+            {
+                coletar_dados_cabecalho(mun, sizeof(mun), dt, sizeof(dt),
+                                        tipo_sessao, sizeof(tipo_sessao), &num_sessao);
+                cabecalho_configurado = 1;
+            }
 
-                if (imprimir_formulario_txt(caminho_relatorio_txt, cabecalho, conteudo, rodape)) {
-                    printf("\n[SUCESSO] Ficheiro limpo gerado em '%s'!\n", caminho_relatorio_txt);
-                    printf("[INFO] Estrutura guardada em '%s'.\n", caminho_meta);
-                }
-                pausar_tela();
-                break;
-            case 0:
-                salvar_estrutura_relatorio(caminho_meta, head);
-                break;
-            default:
-                printf("\nOpção inválida!\n");
-                pausar_tela();
-                break;
+            // Monta o cabeçalho com os dados reais informados
+            formatar_cabecalho(cabecalho, sizeof(cabecalho), mun, dt, num_sessao, tipo_sessao);
+            renderizar_conteudo_do_relatorio(head, conteudo, sizeof(conteudo));
+            formatar_rodape(rodape, sizeof(rodape));
+
+            if (imprimir_formulario_txt(caminho_relatorio_txt, cabecalho, conteudo, rodape))
+            {
+                printf("\n[SUCESSO] Ficheiro limpo gerado em '%s'!\n", caminho_relatorio_txt);
+                printf("[INFO] Estrutura guardada em '%s'.\n", caminho_meta);
+            }
+            pausar_tela();
+            break;
+        case 0:
+            salvar_estrutura_relatorio(caminho_meta, head);
+            break;
+        default:
+            printf("\nOpção inválida!\n");
+            pausar_tela();
+            break;
         }
     }
 
     liberar_blocos(head);
 }
 
-int main() {
-    srand((unsigned int) time(NULL));
+int main()
+{
+    srand((unsigned int)time(NULL));
 
-    //Criação das listas dinamicas
+    // Criação das listas dinamicas
     Vereador *v = carregar_vereadores("OsCapaPreta.txt");
     Reuniao *r = carregar_reunioes("reunioes.txt");
     Projeto *p = carregar_projetos("projetos.txt");
     Presenca *pres = carregar_presencas("presenca.txt");
     Votacao *vot = carregar_votacoes("votacao.txt");
 
-    //Endereço do relatorio
+    // Endereço do relatorio
     const char *arquivo = "relatorio.txt";
 
-    //Usuario vai poder adicionar "bloco a bloco", 
+    // Usuario vai poder adicionar "bloco a bloco",
     editar_documento_por_blocos(arquivo);
 
-    //aq ele poe no formulario e ve se precisa editar algo
+    // aq ele poe no formulario e ve se precisa editar algo
     editar_formulario_txt(arquivo);
 
-
-    //NÃO ESQUEÇAM DE LIBERAR MEMORIA, IMPORTANTE MANTER (É O FREE GERAL)
+    // NÃO ESQUEÇAM DE LIBERAR MEMORIA, IMPORTANTE MANTER (É O FREE GERAL)
     liberar_vereadores(v);
     liberar_reunioes(r);
     liberar_projetos(p);
