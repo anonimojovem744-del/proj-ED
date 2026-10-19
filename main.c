@@ -250,6 +250,13 @@ void sortear_tema_complexo(char *destino, size_t tam_max, const char *prefixo)
     }
 }
 
+void tempo() {
+    time_t tempodata;
+    time(&tempodata);
+
+    struct tempom *tempoinform = localtime(&tempodata);
+}
+
 /* carregamento de dados*/
 
 Vereador *carregar_vereadores(const char *caminho)
@@ -1119,12 +1126,19 @@ void coletar_dados_cabecalho(
 
 void formatar_rodape(char *destino, size_t tamanho)
 {
+    tempo();
+    char autoria[256];
+    limpar_tela();
+    printf("Por favor insira o o nome do Responsavel: ");
+    scanf("%s", autoria);
+    
+
     snprintf(destino, tamanho,
              "\n==================================================\n"
              " Documento Gerado pelo Sistema Legislativo em C   \n"
-             " Assinatura do Responsável: _______________________\n"
-             " Data de Emissão: 2026-09-26                      \n"
-             "==================================================\n");
+             " Assinatura do Responsável: %s                    \n"
+             " Data de Emissão: %d-%02d-%02d                      \n"
+             "==================================================\n", autoria, tempoinform -> tempom_year + 1900, tempoinform -> tempom_mon + 1, tempoinform -> tempom_mday);
 }
 
 /* impressao do formulario */
