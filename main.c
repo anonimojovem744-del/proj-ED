@@ -1127,10 +1127,9 @@ void coletar_dados_cabecalho(
 void formatar_rodape(char *destino, size_t tamanho)
 {
     tempo();
-    char autoria[256];
+    char autoria[100];
     limpar_tela();
-    printf("Por favor insira o o nome do Responsavel: ");
-    scanf("%s", autoria);
+    scanassinatura(autoria[100]);
     
 
     snprintf(destino, tamanho,
@@ -1139,6 +1138,18 @@ void formatar_rodape(char *destino, size_t tamanho)
              " Assinatura do Responsável: %s                    \n"
              " Data de Emissão: %d-%02d-%02d                      \n"
              "==================================================\n", autoria, tempoinform -> tempom_year + 1900, tempoinform -> tempom_mon + 1, tempoinform -> tempom_mday);
+}
+void scanassinatura(char autoria[100]) {
+    int i = 1;
+    int n = 0; 
+    printf("Por favor insira o o nome do Responsavel: ");
+    while(i == 1) {
+        scanf("%s", autoria[n]);
+        if(autoria[n] == '\n'){
+            i = 0;
+        }
+        n = n + 1;
+    }
 }
 
 /* impressao do formulario */
